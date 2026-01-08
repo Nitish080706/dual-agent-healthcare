@@ -1,0 +1,14 @@
+__pycache__/
+.venv/
+.idea/
+.env
+gemini_cache/
+*.pyc
+*.pyo
+*.pyd
+.db
+.ipynb_checkpoints/
+remove_comments.py
+test_integration.py
+test_mongo.py
+list_models.py
