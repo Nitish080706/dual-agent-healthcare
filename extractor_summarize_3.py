@@ -12,6 +12,9 @@ from bson import ObjectId
 from openai import OpenAI
 
 from tools.main_research_agent import ResearchOrchestrator
+from tools.patient_agent import PatientExplainerAgent
+from tools.clinician_agent import ClinicianSummaryAgent
+from rag.dual_rag import MedicalRAGSystem
 
 import pytesseract
 from PIL import Image
@@ -49,6 +52,8 @@ class MongoDBHandler:
                 "health_summary": processed_data.get("health_summary", {}),
                 "detailed_analysis": processed_data.get("detailed_analysis", {}),
                 "research_findings": processed_data.get("research_findings", {}),
+                "patient_summary": processed_data.get("patient_summary", {}),
+                "clinician_summary": processed_data.get("clinician_summary", {}),
                 "overall_health_reading": processed_data.get("health_summary", {}).get("overall_health_reading",
                                                                                        "Unknown")
             }
@@ -57,6 +62,20 @@ class MongoDBHandler:
             return report_document['report_id']
         except Exception as e:
             raise Exception(f"Error storing lab report: {str(e)}")
+
+    def update_report(self, report_id, update_data):
+        """Update an existing report with new data (progressive enrichment)"""
+        try:
+            result = self.reports_collection.update_one(
+                {"report_id": report_id},
+                {"$set": update_data}
+            )
+            if result.modified_count > 0:
+                print(f"   Report {report_id} updated with {len(update_data)} fields")
+            return result.modified_count > 0
+        except Exception as e:
+            print(f"   Error updating report: {str(e)}")
+            return False
 
     def close_connection(self):
         self.client.close()
@@ -89,6 +108,16 @@ class LabReportProcessor:
             base_url="https://api.groq.com/openai/v1"
         )
         self.groq_analysis_model = "llama-3.3-70b-versatile"
+
+        # Initialize RAG System
+        groq_rag_key = os.getenv("GROQ_RAG_API_KEY") or groq_analysis_key
+        self.rag_system = MedicalRAGSystem(groq_api_key=groq_rag_key)
+        self.rag_system.initialize_lab_reference_data()
+
+        # Initialize Patient and Clinician Agents
+        print("   [Debug] Initializing Patient and Clinician Agents...")
+        self.patient_agent = PatientExplainerAgent()
+        self.clinician_agent = ClinicianSummaryAgent()
 
     def extract_text_from_pdf(self, pdf_path):
         text = ""
@@ -178,13 +207,21 @@ class LabReportProcessor:
                     "evidence_sources": []
                 }
 
+            # Retrieve Reference Knowledge from RAG (reduced context to avoid token limits)
+            print("   Querying RAG for medical reference knowledge...")
+            test_names = [abn.get("test", "Unknown Test") for abn in abnormalities]
+            rag_context = self.rag_system.get_reference_context(test_names, top_k=1)
+            
             orchestrator = ResearchOrchestrator()
-            research_report = orchestrator.analyze_and_research(research_input)
+            research_report = orchestrator.analyze_and_research(research_input, rag_context=rag_context)
 
             print("Research Evidence Gathered (Research Agent 3)")
 
+            # Combine RAG + Research in the final prompt logic (or pass both to a synthesizer)
+            # For now, we store them as separate components in the research result
             return {
                 "full_report": research_report,
+                "rag_reference": rag_context,
                 "patient_explainer": self._extract_section(research_report, "PATIENT EXPLAINER"),
                 "clinician_summary": self._extract_section(research_report, "CLINICIAN SUMMARY"),
                 "evidence_sources": self._extract_citations(research_report)
@@ -275,12 +312,30 @@ class LabReportProcessor:
         research_result = self.research_findings(structured_data, analysis_result)
         print("Research Complete (Research Agent 3)")
 
+        # Patient Agent - Simple language explanation
+        patient_summary = self.patient_agent.generate_patient_summary(
+            structured_data=structured_data,
+            analysis_result=analysis_result,
+            research_findings=research_result
+        )
+        print("Patient Summary Complete (Patient Agent 4)")
+
+        # Clinician Agent - Professional clinical summary
+        clinician_summary = self.clinician_agent.generate_clinician_summary(
+            structured_data=structured_data,
+            analysis_result=analysis_result,
+            research_findings=research_result
+        )
+        print("Clinical Summary Complete (Clinician Agent 5)")
+
         return {
             "raw_text": raw_text,
             "structured_data": structured_data,
             "health_summary": analysis_result.get("health_summary", {}),
             "detailed_analysis": analysis_result.get("detailed_analysis", {}),
-            "research_findings": research_result
+            "research_findings": research_result,
+            "patient_summary": patient_summary,
+            "clinician_summary": clinician_summary
         }
 
 

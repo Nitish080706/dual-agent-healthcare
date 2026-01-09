@@ -8,14 +8,19 @@ load_dotenv()
 
 class ResearchOrchestrator:
     def __init__(self):
+        # Use dedicated research API key, fallback to analysis key for backward compatibility
+        api_key = os.getenv("GROQ_RESEARCH_API_KEY") or os.getenv("GROQ_ANALYSIS_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_RESEARCH_API_KEY or GROQ_ANALYSIS_API_KEY required")
+        
         self.client = OpenAI(
             base_url="https://api.groq.com/openai/v1",
-            api_key=os.getenv("GROQ_ANALYSIS_API_KEY") 
+            api_key=api_key
         )
         self.researcher = MedicalResearcher()
         self.model = "llama-3.3-70b-versatile"
 
-    def analyze_and_research(self, extracted_data: dict):
+    def analyze_and_research(self, extracted_data: dict, rag_context: list = None):
         print(f"--- 1. ANALYZING REPORT FOR: {extracted_data.get('patient_demographics', {}).get('name', 'Patient')} ---")
 
         plan_prompt = f"""
@@ -71,19 +76,22 @@ class ResearchOrchestrator:
             }
             final_evidence.append(evidence_packet)
 
-        return self._generate_final_report(extracted_data, final_evidence)
+        return self._generate_final_report(extracted_data, final_evidence, rag_context)
 
-    def _generate_final_report(self, extracted_data, evidence):
+    def _generate_final_report(self, extracted_data, evidence, rag_context=None):
         synthesis_prompt = f"""
-        You are a Medical AI Assistant. Write a report based verified evidence.
+        You are a Medical AI Assistant. Write a comprehensive report by combining authoritative medical reference data (RAG) and current clinical evidence (Internet).
         
         PATIENT DATA: {json.dumps(extracted_data)}
         
-        VERIFIED RESEARCH EVIDENCE YOU FOUND:
+        VERIFIED INTERNET RESEARCH EVIDENCE:
         {json.dumps(evidence, indent=2)}
         
+        MEDICAL REFERENCE DATA (RAG):
+        {json.dumps(rag_context, indent=2) if rag_context else "No reference data available."}
+        
         TASK:
-        Write a report with two sections:
+        Write a report with the following two sections. Merge the RAG knowledge (definitions, standard ranges) with the Internet evidence (recent guidelines, citations).
         
         1. PATIENT EXPLAINER
         - Simple language.

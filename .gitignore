@@ -12,3 +12,5 @@ remove_comments.py
 test_integration.py
 test_mongo.py
 list_models.py
+__data__/
+test_agents.py

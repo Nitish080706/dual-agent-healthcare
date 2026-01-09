@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Report Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Main Selection Page -->
+    <div id="selectionPage" class="page active">
+        <div class="container">
+            <h1 class="main-title">Medical Report Analyzer</h1>
+            <div class="options-container">
+                <div class="option-card" onclick="showPatientPage()">
+                    <div class="option-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <h2>Patient</h2>
+                    <p>View your personal medical reports</p>
+                </div>
+                <div class="option-card" onclick="showClinicPage()">
+                    <div class="option-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                    </div>
+                    <h2>Clinic</h2>
+                    <p>Detailed clinic report analysis</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Page -->
+    <div id="patientPage" class="page">
+        <div class="container">
+            <button class="back-btn" onclick="showSelectionPage()">← Back</button>
+            <h1 class="page-title">Patient Report</h1>
+
+            <!-- Upload Section -->
+            <div id="patientUploadSection" class="upload-section">
+                <div class="upload-box">
+                    <div class="upload-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h3>Upload Medical Report</h3>
+                    <p>Drag and drop your report here or click to browse</p>
+                    <input type="file" id="patientFileInput" accept=".pdf,.jpg,.jpeg,.png"
+                        onchange="handlePatientUpload(event)">
+                    <label for="patientFileInput" class="upload-btn">Choose File</label>
+                </div>
+            </div>
+
+            <!-- Results Section (Hidden initially) -->
+            <div id="patientResultsSection" class="results-section" style="display: none;">
+                <!-- Primary Box - Details and Abnormalities -->
+                <div class="primary-box">
+                    <h2 class="box-title">Report Details & Abnormalities</h2>
+                    <div id="patientDetails" class="details-content">
+                        <!-- Details will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Secondary Boxes - Data Visualizations -->
+                <div class="secondary-boxes">
+                    <div class="secondary-box">
+                        <h3 class="box-title">Health Progression Timeline</h3>
+                        <canvas id="patientChart1"></canvas>
+                    </div>
+                    <div class="secondary-box">
+                        <h3 class="box-title">Lab Values Comparison</h3>
+                        <canvas id="patientChart2"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clinic Page -->
+    <div id="clinicPage" class="page">
+        <div class="container">
+            <button class="back-btn" onclick="showSelectionPage()">← Back</button>
+            <h1 class="page-title">Clinic Report</h1>
+
+            <!-- Upload Section -->
+            <div id="clinicUploadSection" class="upload-section">
+                <div class="upload-box">
+                    <div class="upload-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h3>Upload Medical Report</h3>
+                    <p>Drag and drop your report here or click to browse</p>
+                    <input type="file" id="clinicFileInput" accept=".pdf,.jpg,.jpeg,.png"
+                        onchange="handleClinicUpload(event)">
+                    <label for="clinicFileInput" class="upload-btn">Choose File</label>
+                </div>
+            </div>
+
+            <!-- Results Section (Hidden initially) -->
+            <div id="clinicResultsSection" class="results-section" style="display: none;">
+                <!-- Primary Box containing all metrics -->
+                <div class="primary-box clinic-primary">
+                    <h2 class="box-title">Extracted Report Details</h2>
+
+                    <!-- Multiple metric boxes (populated dynamically) -->
+                    <div class="metrics-grid">
+                        <!-- Metrics will be populated dynamically from API response -->
+                    </div>
+
+                    <!-- Visualization Charts -->
+                    <div class="secondary-boxes" style="margin-top: 32px;">
+                        <div class="secondary-box">
+                            <h3 class="box-title">Lab Values Overview</h3>
+                            <canvas id="clinicChart1"></canvas>
+                        </div>
+                        <div class="secondary-box">
+                            <h3 class="box-title">Values vs Reference Ranges</h3>
+                            <canvas id="clinicChart2"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Additional Details -->
+                    <div id="clinicDetails" class="clinic-details">
+                        <!-- Additional extracted details will be shown here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
