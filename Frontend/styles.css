@@ -1,13 +1,40 @@
-/* Professional White & Blue Minimalistic Theme */
+/* Premium Light Mode Design with Modern Aesthetics */
 :root {
-    --primary-blue: #60A5FA;        /* Light Blue */
-    --blue-light: #DBEAFE;          /* Very Light Blue Background */
-    --blue-hover: #3B82F6;          /* Medium Blue on Hover */
-    --blue-accent: #EFF6FF;         /* Subtle Blue Accent */
-    --text-primary: #111827;        /* Dark Text */
-    --text-secondary: #6B7280;      /* Medium Gray Text */
-    --border-light: #E5E7EB;        /* Very Subtle Border */
+    --primary-blue: #3B82F6;
+    /* Vibrant Blue */
+    --primary-blue-light: #60A5FA;
+    /* Light Blue */
+    --blue-lighter: #93C5FD;
+    /* Even Lighter Blue */
+    --blue-gradient-start: #60A5FA;
+    /* Gradient Start */
+    --blue-gradient-end: #3B82F6;
+    /* Gradient End */
+    --blue-light: #DBEAFE;
+    /* Very Light Blue Background */
+    --blue-hover: #2563EB;
+    /* Darker Blue on Hover */
+    --blue-accent: #EFF6FF;
+    /* Subtle Blue Accent */
+    --background: #F9FAFB;
+    /* Off-white background */
+    --text-primary: #111827;
+    /* Dark Text */
+    --text-secondary: #6B7280;
+    /* Medium Gray Text */
+    --border-light: #E5E7EB;
+    /* Very Subtle Border */
     --white: #FFFFFF;
+    --success: #10B981;
+    /* Green for success */
+    --warning: #F59E0B;
+    /* Orange for warnings */
+    --danger: #EF4444;
+    /* Red for danger */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 * {
@@ -18,7 +45,7 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-    background: var(--white);
+    background: linear-gradient(135deg, var(--background) 0%, var(--blue-accent) 100%);
     min-height: 100vh;
     color: var(--text-primary);
     line-height: 1.6;
@@ -62,18 +89,19 @@ body {
 .option-card {
     background: var(--white);
     border: 1px solid var(--border-light);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 48px 32px;
     width: 320px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
 }
 
 .option-card:hover {
     border-color: var(--primary-blue);
-    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
-    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-4px) scale(1.02);
 }
 
 .option-icon {
@@ -191,20 +219,23 @@ body {
 }
 
 .upload-btn {
-    background: var(--primary-blue);
+    background: linear-gradient(135deg, var(--blue-gradient-start) 0%, var(--blue-gradient-end) 100%);
     color: var(--white);
-    padding: 12px 32px;
-    border-radius: 8px;
+    padding: 14px 36px;
+    border-radius: 10px;
     cursor: pointer;
     display: inline-block;
     font-size: 0.9375rem;
-    font-weight: 500;
-    transition: background 0.2s ease;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
+    box-shadow: var(--shadow-md);
 }
 
 .upload-btn:hover {
-    background: var(--blue-hover);
+    background: linear-gradient(135deg, var(--blue-gradient-end) 0%, var(--blue-hover) 100%);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
 }
 
 /* Results Section */
@@ -218,6 +249,7 @@ body {
         opacity: 0;
         transform: translateY(16px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -228,9 +260,15 @@ body {
 .primary-box {
     background: var(--white);
     border: 1px solid var(--border-light);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 40px;
     margin-bottom: 32px;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+}
+
+.primary-box:hover {
+    box-shadow: var(--shadow-lg);
 }
 
 .primary-box.clinic-primary {
@@ -307,8 +345,15 @@ body {
 .secondary-box {
     background: var(--white);
     border: 1px solid var(--border-light);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 32px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.secondary-box:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--blue-lighter);
 }
 
 .secondary-box .box-title {
@@ -331,17 +376,38 @@ body {
 }
 
 .metric-box {
-    background: var(--blue-accent);
+    background: linear-gradient(135deg, var(--blue-accent) 0%, var(--white) 100%);
     border: 1px solid var(--border-light);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 24px 20px;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--blue-gradient-start) 0%, var(--blue-gradient-end) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .metric-box:hover {
-    border-color: var(--primary-blue);
-    background: var(--blue-light);
+    border-color: var(--primary-blue-light);
+    background: linear-gradient(135deg, var(--blue-light) 0%, var(--white) 100%);
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: var(--shadow-md);
+}
+
+.metric-box:hover::before {
+    opacity: 1;
 }
 
 .metric-label {
@@ -354,8 +420,11 @@ body {
 }
 
 .metric-value {
-    color: var(--primary-blue);
-    font-size: 2rem;
+    background: linear-gradient(135deg, var(--blue-gradient-start) 0%, var(--blue-gradient-end) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 2.25rem;
     font-weight: 700;
     margin-bottom: 4px;
     letter-spacing: -0.5px;
@@ -399,8 +468,46 @@ body {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Health Score Badge */
+.health-score-badge {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.health-score-badge.excellent {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+}
+
+.health-score-badge.good {
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    color: white;
+}
+
+.health-score-badge.moderate {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    color: white;
+}
+
+.health-score-badge.danger {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: white;
 }
 
 /* Responsive Design */

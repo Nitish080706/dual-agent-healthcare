@@ -8,6 +8,7 @@ import tempfile
 import traceback
 
 from extractor_summarize_3 import LabReportProcessor, MongoDBHandler
+from tools.visualization_agent import VisualizationAgent
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,6 +27,7 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 # Initialize processor globally (reuse across requests)
 processor = None
 db_handler = None
+visualization_agent = None
 
 
 def allowed_file(filename):
@@ -35,12 +37,20 @@ def allowed_file(filename):
 
 def initialize_processor():
     """Initialize the lab report processor"""
-    global processor, db_handler
+    global processor, db_handler, visualization_agent
     if processor is None:
         try:
             print("Initializing LabReportProcessor...")
             processor = LabReportProcessor()
             print("LabReportProcessor initialized successfully")
+            
+            # Initialize visualization agent
+            try:
+                visualization_agent = VisualizationAgent()
+                print("VisualizationAgent initialized successfully")
+            except Exception as e:
+                print(f"VisualizationAgent initialization failed: {e}")
+                visualization_agent = None
             
             # Initialize MongoDB handler if URI is available
             mongodb_uri = os.getenv("MONGODB_URI")
@@ -155,7 +165,45 @@ def format_response(result, report_type, report_id=None):
         'timestamp': str(Path().cwd()),  # Use for debugging
     }
     
+    # Generate visualization data using the visualization agent
+    chart_data = None
+    if visualization_agent:
+        try:
+            analysis_result = {
+                'health_summary': health_summary,
+                'detailed_analysis': detailed_analysis
+            }
+            
+            if report_type == 'patient':
+                chart_data = visualization_agent.structure_patient_chart_data(
+                    structured_data, analysis_result
+                )
+            else:
+                chart_data = visualization_agent.structure_clinic_chart_data(
+                    structured_data, analysis_result
+                )
+        except Exception as e:
+            print(f"Error generating visualization data: {e}")
+            chart_data = None
+    
     if report_type == 'patient':
+        # Extract test results with fallback logic (same as clinic)
+        test_results = structured_data.get('lab_results', [])
+        if not test_results:
+            test_results = structured_data.get('test_results', [])
+        if not test_results:
+            # Try to extract from top-level structured data
+            test_results = []
+            for key, value in structured_data.items():
+                if key not in ['patient_demographics', 'report_date', 'lab_name']:
+                    if isinstance(value, dict) and any(k in value for k in ['value', 'unit', 'ref_range']):
+                        test_results.append({
+                            'test_name': key,
+                            'value': value.get('value', ''),
+                            'unit': value.get('unit', ''),
+                            'reference_range': value.get('ref_range', value.get('reference_range', ''))
+                        })
+        
         # Format for patient view
         response['patientData'] = {
             'patientInfo': structured_data.get('patient_demographics', {}),
@@ -164,10 +212,11 @@ def format_response(result, report_type, report_id=None):
             'keyFindings': health_summary.get('key_findings', []),
             'abnormalities': detailed_analysis.get('abnormalities', []),
             'recommendations': detailed_analysis.get('lifestyle_recommendations', []),
-            'testResults': structured_data.get('lab_results', []),
+            'testResults': test_results,
             'patientExplanation': patient_summary.get('plain_language_summary', research_findings.get('patient_explainer', '')),
             'needsAttention': patient_summary.get('needs_attention', []),
             'whatIsNormal': patient_summary.get('what_is_normal', []),
+            'chartData': chart_data  # Add visualization data
         }
     else:
         # Format for clinic view
@@ -197,9 +246,34 @@ def format_response(result, report_type, report_id=None):
         clinical_notes = '\n'.join(clinical_notes_parts) if clinical_notes_parts else \
                         research_findings.get('clinician_summary', health_summary.get('summary_text', 'No clinical notes available'))
         
+        # Debug: Print structured_data to see what keys it has
+        print(f"DEBUG: structured_data keys: {list(structured_data.keys())}")
+        print(f"DEBUG: structured_data content: {json.dumps(structured_data, indent=2)[:500]}")
+        
+        # Extract lab results - try multiple possible keys
+        lab_results = structured_data.get('lab_results', [])
+        if not lab_results:
+            # Try other possible keys
+            lab_results = structured_data.get('test_results', [])
+        if not lab_results:
+            # Try to extract from top-level structured data if it's a dict of tests
+            lab_results = []
+            for key, value in structured_data.items():
+                if key not in ['patient_demographics', 'report_date', 'lab_name']:
+                    if isinstance(value, dict) and any(k in value for k in ['value', 'unit', 'ref_range']):
+                        # This looks like a test result
+                        lab_results.append({
+                            'test_name': key,
+                            'value': value.get('value', ''),
+                            'unit': value.get('unit', ''),
+                            'reference_range': value.get('ref_range', value.get('reference_range', ''))
+                        })
+        
+        print(f"DEBUG: Extracted {len(lab_results)} lab results")
+        
         response['clinicData'] = {
             'patientInfo': structured_data.get('patient_demographics', {}),
-            'labResults': structured_data.get('lab_results', []),
+            'labResults': lab_results,
             'summary': clinician_summary.get('clinical_context', health_summary.get('summary_text', '')),
             'overallHealth': health_summary.get('overall_health_reading', 'Unknown'),
             'abnormalities': detailed_analysis.get('abnormalities', []),
@@ -210,6 +284,7 @@ def format_response(result, report_type, report_id=None):
             'criticalFindings': clinician_summary.get('critical_findings', []),
             'normalFindings': clinician_summary.get('normal_findings', []),
             'differentialConsiderations': clinician_summary.get('differential_considerations', []),
+            'chartData': chart_data  # Add visualization data
         }
     
     return response

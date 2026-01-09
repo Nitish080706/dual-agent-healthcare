@@ -189,257 +189,224 @@ function createPatientCharts() {
         patientChart2.destroy();
     }
 
-    // Use real data if available, otherwise use sample data
-    let testResults = [];
-    let overallHealth = 'Unknown';
-    let usingSampleData = false;
+    // Check if we have chart data from visualization agent
+    const chartData = currentPatientData?.chartData;
 
-    if (currentPatientData && currentPatientData.testResults && currentPatientData.testResults.length > 0) {
-        testResults = currentPatientData.testResults;
-        overallHealth = currentPatientData.overallHealth || 'Unknown';
-        console.log('✅ Using real test results:', testResults.length);
-    } else if (currentPatientData && currentPatientData.abnormalities && currentPatientData.abnormalities.length > 0) {
-        testResults = currentPatientData.abnormalities;
-        overallHealth = currentPatientData.overallHealth || 'Unknown';
-        console.log('✅ Using abnormalities data:', testResults.length);
+    if (chartData && chartData.health_progression) {
+        console.log('✅ Using visualization agent data');
+
+        // Chart 1: Health Progression Timeline from agent
+        const ctx1 = document.getElementById('patientChart1').getContext('2d');
+        const healthProg = chartData.health_progression;
+
+        patientChart1 = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: healthProg.labels,
+                datasets: [{
+                    label: 'Health Status Score',
+                    data: healthProg.scores,
+                    borderColor: '#60A5FA',
+                    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#60A5FA',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return 'Health Score: ' + context.parsed.y + '/100';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: '#F3F4F6'
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            },
+                            color: '#6B7280',
+                            callback: function (value) {
+                                return value + '/100';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Health Score',
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 11,
+                                weight: '500'
+                            },
+                            color: '#6B7280'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Chart 2: Lab Values Comparison from agent
+        const ctx2 = document.getElementById('patientChart2').getContext('2d');
+        const labComp = chartData.lab_comparison;
+
+        const testLabels = labComp.map(t => t.test_name);
+        const testValues = labComp.map(t => t.value);
+
+        patientChart2 = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: testLabels,
+                datasets: [{
+                    label: 'Current Values',
+                    data: testValues,
+                    backgroundColor: '#60A5FA',
+                    borderColor: '#60A5FA',
+                    borderWidth: 0,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const index = context.dataIndex;
+                                const test = labComp[index];
+                                return test.display_value;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#F3F4F6'
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            },
+                            color: '#6B7280'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            },
+                            color: '#6B7280',
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('✅ Patient charts created successfully from agent data');
     } else {
-        // Fallback to sample data
-        usingSampleData = true;
-        testResults = [
-            { test_name: 'Hemoglobin', value: '13.5', unit: 'g/dL' },
-            { test_name: 'WBC', value: '7.2', unit: '×10³/μL' },
-            { test_name: 'RBC', value: '4.8', unit: '×10⁶/μL' },
-            { test_name: 'Platelets', value: '250', unit: '×10³/μL' },
-            { test_name: 'Hematocrit', value: '42', unit: '%' }
-        ];
-        overallHealth = 'Good';
-        console.warn('⚠️ No patient data available, using sample data');
+        console.warn('⚠️ No chart data from visualization agent, using fallback');
+        // Fallback to original implementation if no agent data
+        createPatientChartsFallback();
     }
+}
 
-    console.log('📊 Test Results:', testResults.length, testResults);
-    console.log('🏥 Overall Health:', overallHealth);
+function createPatientChartsFallback() {
+    console.log('📊 Using fallback patient charts with sample data');
 
-
-    // Chart 1: Health Progression Timeline (Linear)
     const ctx1 = document.getElementById('patientChart1').getContext('2d');
+    const ctx2 = document.getElementById('patientChart2').getContext('2d');
 
-    // Map health status to numeric score for timeline
-    const healthScoreMap = {
-        'Excellent': 100,
-        'Good': 75,
-        'Moderate': 50,
-        'Danger': 25,
-        'Unknown': 0
-    };
-
-    const healthScore = healthScoreMap[overallHealth] || 0;
-
-    // Create progression data (simulated timeline - in real app, would use historical data)
-    const timelineData = [
-        { label: 'Previous', score: Math.max(0, healthScore - 10) },
-        { label: 'Current', score: healthScore },
-        { label: 'Target', score: Math.min(100, healthScore + 15) }
-    ];
-
+    // Simple fallback charts with sample data
     patientChart1 = new Chart(ctx1, {
         type: 'line',
         data: {
-            labels: timelineData.map(d => d.label),
+            labels: ['Previous', 'Current', 'Target'],
             datasets: [{
-                label: 'Health Status Score',
-                data: timelineData.map(d => d.score),
+                label: 'Health Score',
+                data: [65, 75, 90],
                 borderColor: '#60A5FA',
                 backgroundColor: 'rgba(96, 165, 250, 0.1)',
                 tension: 0.4,
-                fill: true,
-                borderWidth: 3,
-                pointRadius: 6,
-                pointHoverRadius: 8,
-                pointBackgroundColor: '#60A5FA',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2
+                fill: true
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 15,
-                        font: {
-                            size: 12,
-                            weight: '500'
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            label += context.parsed.y + '/100';
-                            return label;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    grid: {
-                        color: '#F3F4F6'
-                    },
-                    ticks: {
-                        font: {
-                            size: 11
-                        },
-                        color: '#6B7280',
-                        callback: function (value) {
-                            return value + '/100';
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Health Score',
-                        font: {
-                            size: 12,
-                            weight: '600'
-                        }
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 11,
-                            weight: '500'
-                        },
-                        color: '#6B7280'
-                    }
-                }
-            }
+            maintainAspectRatio: true
         }
     });
-
-    // Chart 2: Lab Values Comparison (Bar)
-    const ctx2 = document.getElementById('patientChart2').getContext('2d');
-
-    console.log('📊 Creating Lab Values Comparison chart...');
-
-    // Get test results - try multiple possible data sources
-    let testsToDisplay = [];
-
-    if (testResults && testResults.length > 0) {
-        testsToDisplay = testResults.slice(0, 6);
-    } else if (currentPatientData.abnormalities && currentPatientData.abnormalities.length > 0) {
-        // Fallback to abnormalities if test results not available
-        testsToDisplay = currentPatientData.abnormalities.slice(0, 6);
-    } else if (usingSampleData) {
-        // If using sample data, ensure testsToDisplay is populated from the sample data
-        testsToDisplay = [
-            { test_name: 'Hemoglobin', value: '13.5', unit: 'g/dL' },
-            { test_name: 'WBC', value: '7.2', unit: '×10³/μL' },
-            { test_name: 'RBC', value: '4.8', unit: '×10⁶/μL' },
-            { test_name: 'Platelets', value: '250', unit: '×10³/μL' },
-            { test_name: 'Hematocrit', value: '42', unit: '%' },
-            { test_name: 'Glucose', value: '95', unit: 'mg/dL' }
-        ].slice(0, 6);
-    }
-
-
-    console.log('📊 Tests to display:', testsToDisplay.length, testsToDisplay);
-
-    // Always ensure the chart canvas is visible, even if no data (it will show empty chart or sample data)
-    document.getElementById('patientChart2').style.display = 'block';
-
-    const testLabels = testsToDisplay.map(t => t.test_name || t.test || 'Unknown Test');
-    const testValues = testsToDisplay.map(t => {
-        const val = parseFloat(t.value);
-        return isNaN(val) ? 0 : val;
-    });
-
-    console.log('📊 Chart labels:', testLabels);
-    console.log('📊 Chart values:', testValues);
 
     patientChart2 = new Chart(ctx2, {
         type: 'bar',
         data: {
-            labels: testLabels,
+            labels: ['Hemoglobin', 'WBC', 'RBC', 'Platelets'],
             datasets: [{
-                label: usingSampleData ? 'Sample Values (Upload report for real data)' : 'Current Values',
-                data: testValues,
-                backgroundColor: usingSampleData ? '#9CA3AF' : '#60A5FA',
-                borderColor: usingSampleData ? '#6B7280' : '#60A5FA',
-                borderWidth: 0,
-                borderRadius: 6
+                label: 'Sample Data',
+                data: [13.5, 7.2, 4.8, 250],
+                backgroundColor: '#9CA3AF'
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: usingSampleData,
-                    position: 'top',
-                    labels: {
-                        font: {
-                            size: 11,
-                            style: 'italic'
-                        },
-                        color: '#6B7280'
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const index = context.dataIndex;
-                            const test = testsToDisplay[index];
-                            return (test.value || context.parsed.y) + ' ' + (test.unit || '');
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: '#F3F4F6'
-                    },
-                    ticks: {
-                        font: {
-                            size: 11
-                        },
-                        color: '#6B7280'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 10
-                        },
-                        color: '#6B7280',
-                        maxRotation: 45,
-                        minRotation: 45
-                    }
-                }
-            }
+            maintainAspectRatio: true
         }
     });
-
-    console.log('✅ Patient charts created successfully');
 }
+
 
 function resetPatientPage() {
     document.getElementById('patientUploadSection').style.display = 'flex';
@@ -490,8 +457,8 @@ function displayClinicResults() {
     // Populate additional details
     populateClinicDetails();
 
-    // Create charts
-    createClinicCharts();
+    // Charts removed per user request - graphs not working
+    // createClinicCharts();
 }
 
 function createClinicCharts() {
@@ -506,215 +473,226 @@ function createClinicCharts() {
         clinicChart2.destroy();
     }
 
-    // Use real data if available, otherwise use sample data
-    let labResults = [];
-    let usingSampleData = false;
+    // Check if we have chart data from visualization agent
+    const chartData = currentClinicData?.chartData;
 
-    if (currentClinicData && currentClinicData.labResults && currentClinicData.labResults.length > 0) {
-        labResults = currentClinicData.labResults;
-        console.log('✅ Using real lab results:', labResults.length);
+    if (chartData && chartData.lab_overview && chartData.reference_comparison) {
+        console.log('✅ Using visualization agent data for clinic charts');
+
+        // Chart 1: Lab Values Overview from agent
+        const ctx1 = document.getElementById('clinicChart1');
+        if (!ctx1) {
+            console.error('❌ Chart canvas element clinicChart1 not found');
+            return;
+        }
+
+        const labOverview = chartData.lab_overview;
+        const labels1 = labOverview.map(t => t.test_name);
+        const values1 = labOverview.map(t => t.value);
+
+        clinicChart1 = new Chart(ctx1.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels1,
+                datasets: [{
+                    label: 'Test Values',
+                    data: values1,
+                    backgroundColor: '#60A5FA',
+                    borderColor: '#3B82F6',
+                    borderWidth: 0,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const index = context.dataIndex;
+                                const test = labOverview[index];
+                                return test.display_value;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#F3F4F6'
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            },
+                            color: '#6B7280'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            },
+                            color: '#6B7280',
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('✅ Clinic Chart 1 created from agent data');
+
+        // Chart 2: Values vs Reference Ranges from agent
+        const ctx2 = document.getElementById('clinicChart2');
+        if (!ctx2) {
+            console.error('❌ Chart canvas element clinicChart2 not found');
+            return;
+        }
+
+        const refComparison = chartData.reference_comparison;
+        const labels2 = refComparison.map(t => t.test_name);
+        const values2 = refComparison.map(t => t.value);
+
+        // Color code based on status
+        const backgroundColors = refComparison.map(t => {
+            switch (t.status) {
+                case 'high': return '#F87171'; // Red for high
+                case 'low': return '#FBBF24';  // Yellow for low
+                default: return '#60A5FA';     // Blue for normal
+            }
+        });
+
+        clinicChart2 = new Chart(ctx2.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels2,
+                datasets: [{
+                    label: 'Current Value',
+                    data: values2,
+                    backgroundColor: backgroundColors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const index = context.dataIndex;
+                                const test = refComparison[index];
+                                const result = [
+                                    `Value: ${test.display_value}`,
+                                    `Reference: ${test.reference_range}`
+                                ];
+                                if (test.status !== 'normal') {
+                                    result.push(`Status: ${test.status.toUpperCase()}`);
+                                }
+                                return result;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#F3F4F6'
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            },
+                            color: '#6B7280'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            },
+                            color: '#6B7280'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('✅ Clinic charts created successfully from agent data');
     } else {
-        // Fallback to sample data
-        usingSampleData = true;
-        labResults = [
-            { test_name: 'Hemoglobin', value: '14.2', unit: 'g/dL', ref_range: '13.5-17.5 g/dL' },
-            { test_name: 'WBC', value: '6.8', unit: '×10³/μL', ref_range: '4.5-11.0 ×10³/μL' },
-            { test_name: 'RBC', value: '5.1', unit: '×10⁶/μL', ref_range: '4.5-5.5 ×10⁶/μL' },
-            { test_name: 'Platelets', value: '280', unit: '×10³/μL', ref_range: '150-400 ×10³/μL' },
-            { test_name: 'Hematocrit', value: '44', unit: '%', ref_range: '40-52%' },
-            { test_name: 'MCV', value: '88', unit: 'fL', ref_range: '80-100 fL' },
-            { test_name: 'MCH', value: '29', unit: 'pg', ref_range: '27-33 pg' },
-            { test_name: 'MCHC', value: '33', unit: 'g/dL', ref_range: '32-36 g/dL' }
-        ];
-        console.warn('⚠️ No clinic data available, using sample data');
+        console.warn('⚠️ No chart data from visualization agent for clinic');
+        // Fallback if no agent data
+        createClinicChartsFallback();
     }
+}
 
-    console.log('📊 Lab Results for charts:', labResults.length, labResults);
+function createClinicChartsFallback() {
+    console.log('📊 Using fallback clinic charts');
 
-    // Chart 1: Lab Values Overview (Bar chart)
     const ctx1 = document.getElementById('clinicChart1');
-    if (!ctx1) {
-        console.error('❌ Chart canvas element clinicChart1 not found');
+    const ctx2 = document.getElementById('clinicChart2');
+
+    if (!ctx1 || !ctx2) {
+        console.error('❌ Chart canvas elements not found');
         return;
     }
 
-    console.log('✅ Creating Clinic Chart 1 (Lab Values Overview)');
-
-    const labels = labResults.slice(0, 8).map(t => t.test_name || 'Unknown');
-    const values = labResults.slice(0, 8).map(t => {
-        const val = parseFloat(t.value);
-        return isNaN(val) ? 0 : val;
-    });
-
-    console.log('📊 Chart 1 Labels:', labels);
-    console.log('📊 Chart 1 Values:', values);
-
+    // Simple fallback charts with sample data
     clinicChart1 = new Chart(ctx1.getContext('2d'), {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: ['Hemoglobin', 'WBC', 'RBC', 'Platelets'],
             datasets: [{
-                label: usingSampleData ? 'Sample Data' : 'Test Values',
-                data: values,
-                backgroundColor: usingSampleData ? '#9CA3AF' : '#60A5FA',
-                borderColor: usingSampleData ? '#6B7280' : '#3B82F6',
-                borderWidth: 1,
-                borderRadius: 6
+                label: 'Sample Data',
+                data: [14.2, 6.8, 5.1, 280],
+                backgroundColor: '#9CA3AF'
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: usingSampleData,
-                    labels: {
-                        font: {
-                            size: 11,
-                            style: 'italic'
-                        },
-                        color: '#6B7280'
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const index = context.dataIndex;
-                            const test = labResults[index];
-                            return `${test.value} ${test.unit || ''}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: '#F3F4F6'
-                    },
-                    ticks: {
-                        font: {
-                            size: 11
-                        },
-                        color: '#6B7280'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 10
-                        },
-                        color: '#6B7280',
-                        maxRotation: 45,
-                        minRotation: 45
-                    }
-                }
-            }
+            maintainAspectRatio: true
         }
-    });
-
-    console.log('✅ Clinic Chart 1 created');
-
-    // Chart 2: Values vs Reference Ranges (Horizontal Bar for better comparison)
-    const ctx2 = document.getElementById('clinicChart2');
-    if (!ctx2) {
-        console.error('❌ Chart canvas element clinicChart2 not found');
-        return;
-    }
-
-    console.log('✅ Creating Clinic Chart 2 (Values vs Reference)');
-
-    // Filter tests that have reference ranges
-    const testsWithRanges = labResults.filter(t => t.ref_range || t.reference_range).slice(0, 6);
-
-    console.log('📊 Tests with reference ranges:', testsWithRanges.length, testsWithRanges);
-
-    // Always create chart 2, use available tests if no reference ranges
-    const testsToUse = testsWithRanges.length > 0 ? testsWithRanges : labResults.slice(0, 6);
-    const hasReferenceRanges = testsWithRanges.length > 0;
-
-    const rangeLabels = testsToUse.map(t => t.test_name || 'Unknown');
-    const rangeValues = testsToUse.map(t => {
-        const val = parseFloat(t.value);
-        return isNaN(val) ? 0 : val;
     });
 
     clinicChart2 = new Chart(ctx2.getContext('2d'), {
         type: 'bar',
         data: {
-            labels: rangeLabels,
+            labels: ['Hemoglobin', 'WBC', 'RBC'],
             datasets: [{
-                label: usingSampleData ? 'Sample Data' : 'Current Value',
-                data: rangeValues,
-                backgroundColor: usingSampleData ? '#9CA3AF' : '#60A5FA',
-                borderRadius: 6
+                label: 'Sample Data',
+                data: [14.2, 6.8, 5.1],
+                backgroundColor: '#9CA3AF'
             }]
         },
         options: {
             indexAxis: 'y',
             responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: usingSampleData,
-                    labels: {
-                        font: {
-                            size: 11,
-                            style: 'italic'
-                        },
-                        color: '#6B7280'
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const index = context.dataIndex;
-                            const test = testsToUse[index];
-                            const refRange = test.ref_range || test.reference_range;
-                            if (refRange) {
-                                return [
-                                    `Value: ${test.value} ${test.unit || ''}`,
-                                    `Reference: ${refRange}`
-                                ];
-                            }
-                            return `Value: ${test.value} ${test.unit || ''}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    grid: {
-                        color: '#F3F4F6'
-                    },
-                    ticks: {
-                        font: {
-                            size: 11
-                        },
-                        color: '#6B7280'
-                    }
-                },
-                y: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 10
-                        },
-                        color: '#6B7280'
-                    }
-                }
-            }
+            maintainAspectRatio: true
         }
     });
-
-    console.log(`✅ Clinic Chart 2 created ${usingSampleData ? '(sample data)' : hasReferenceRanges ? '(with reference ranges)' : '(without reference ranges)'}`);
-    console.log('✅ Clinic charts created successfully');
 }
 
 function populateClinicMetrics() {
