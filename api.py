@@ -14,29 +14,25 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)  
 
-# Configuration
 UPLOAD_FOLDER = tempfile.gettempdir()
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'bmp'}
-MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
+MAX_FILE_SIZE = 16 * 1024 * 1024 
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
-# Initialize processor globally (reuse across requests)
 processor = None
 db_handler = None
 visualization_agent = None
 
 
 def allowed_file(filename):
-    """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def initialize_processor():
-    """Initialize the lab report processor"""
     global processor, db_handler, visualization_agent
     if processor is None:
         try:
@@ -44,7 +40,6 @@ def initialize_processor():
             processor = LabReportProcessor()
             print("LabReportProcessor initialized successfully")
             
-            # Initialize visualization agent
             try:
                 visualization_agent = VisualizationAgent()
                 print("VisualizationAgent initialized successfully")
@@ -52,7 +47,6 @@ def initialize_processor():
                 print(f"VisualizationAgent initialization failed: {e}")
                 visualization_agent = None
             
-            # Initialize MongoDB handler if URI is available
             mongodb_uri = os.getenv("MONGODB_URI")
             if mongodb_uri:
                 try:
@@ -68,7 +62,6 @@ def initialize_processor():
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
         'message': 'Medical Report Analyzer API is running',
@@ -79,18 +72,9 @@ def health_check():
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """
-    Upload and process medical report
-    Expected form data:
-    - file: The medical report file (PDF or image)
-    - reportType: 'patient' or 'clinic'
-    - userId: Optional user identifier
-    """
     try:
-        # Initialize processor if not already done
         initialize_processor()
         
-        # Check if file is present
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
         
@@ -102,21 +86,17 @@ def upload_file():
         if not allowed_file(file.filename):
             return jsonify({'error': 'Invalid file type. Allowed: PDF, PNG, JPG, JPEG, BMP'}), 400
         
-        # Get report type (patient or clinic)
         report_type = request.form.get('reportType', 'patient')
         user_id = request.form.get('userId', 'anonymous_user')
         
-        # Save file temporarily
         filename = secure_filename(file.filename)
         temp_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(temp_path)
         
         try:
-            # Process the report
             print(f"Processing report: {filename} (type: {report_type})")
             result = processor.process_lab_report(temp_path)
             
-            # Store in MongoDB if available
             report_id = None
             if db_handler:
                 try:
@@ -129,13 +109,11 @@ def upload_file():
                 except Exception as e:
                     print(f"Failed to store in MongoDB: {e}")
             
-            # Format response based on report type
             response_data = format_response(result, report_type, report_id)
             
             return jsonify(response_data), 200
             
         finally:
-            # Clean up temporary file
             if os.path.exists(temp_path):
                 os.remove(temp_path)
     
@@ -149,9 +127,6 @@ def upload_file():
 
 
 def format_response(result, report_type, report_id=None):
-    """Format the processing result for frontend consumption"""
-    
-    # Extract structured data
     structured_data = result.get('structured_data', {})
     health_summary = result.get('health_summary', {})
     detailed_analysis = result.get('detailed_analysis', {})
@@ -162,10 +137,9 @@ def format_response(result, report_type, report_id=None):
     response = {
         'reportId': report_id,
         'reportType': report_type,
-        'timestamp': str(Path().cwd()),  # Use for debugging
+        'timestamp': str(Path().cwd()),
     }
     
-    # Generate visualization data using the visualization agent
     chart_data = None
     if visualization_agent:
         try:
@@ -187,12 +161,10 @@ def format_response(result, report_type, report_id=None):
             chart_data = None
     
     if report_type == 'patient':
-        # Extract test results with fallback logic (same as clinic)
         test_results = structured_data.get('lab_results', [])
         if not test_results:
             test_results = structured_data.get('test_results', [])
         if not test_results:
-            # Try to extract from top-level structured data
             test_results = []
             for key, value in structured_data.items():
                 if key not in ['patient_demographics', 'report_date', 'lab_name']:
@@ -204,7 +176,6 @@ def format_response(result, report_type, report_id=None):
                             'reference_range': value.get('ref_range', value.get('reference_range', ''))
                         })
         
-        # Format for patient view
         response['patientData'] = {
             'patientInfo': structured_data.get('patient_demographics', {}),
             'summary': patient_summary.get('plain_language_summary', health_summary.get('summary_text', '')),
@@ -216,52 +187,40 @@ def format_response(result, report_type, report_id=None):
             'patientExplanation': patient_summary.get('plain_language_summary', research_findings.get('patient_explainer', '')),
             'needsAttention': patient_summary.get('needs_attention', []),
             'whatIsNormal': patient_summary.get('what_is_normal', []),
-            'chartData': chart_data  # Add visualization data
+            'chartData': chart_data
         }
     else:
-        # Format for clinic view
-        # Build comprehensive clinical notes from clinician summary
         clinical_notes_parts = []
         
-        # Add clinical context
         if clinician_summary.get('clinical_context'):
             clinical_notes_parts.append(f"Clinical Context: {clinician_summary.get('clinical_context')}")
         
-        # Add critical findings summary
         critical_findings = clinician_summary.get('critical_findings', [])
         if critical_findings:
             clinical_notes_parts.append(f"\nCritical Findings: {len(critical_findings)} abnormal value(s) detected")
         
-        # Add differential considerations
         diff_considerations = clinician_summary.get('differential_considerations', [])
         if diff_considerations:
             clinical_notes_parts.append(f"\nDifferential Considerations: {', '.join(diff_considerations)}")
         
-        # Add recommendations summary
         recommendations = clinician_summary.get('recommendations', [])
         if recommendations:
             clinical_notes_parts.append(f"\nRecommendations: {'; '.join(recommendations)}")
         
-        # Fallback to research clinician summary if agent summary is empty
         clinical_notes = '\n'.join(clinical_notes_parts) if clinical_notes_parts else \
                         research_findings.get('clinician_summary', health_summary.get('summary_text', 'No clinical notes available'))
         
-        # Debug: Print structured_data to see what keys it has
         print(f"DEBUG: structured_data keys: {list(structured_data.keys())}")
         print(f"DEBUG: structured_data content: {json.dumps(structured_data, indent=2)[:500]}")
         
-        # Extract lab results - try multiple possible keys
         lab_results = structured_data.get('lab_results', [])
         if not lab_results:
-            # Try other possible keys
             lab_results = structured_data.get('test_results', [])
         if not lab_results:
-            # Try to extract from top-level structured data if it's a dict of tests
             lab_results = []
             for key, value in structured_data.items():
                 if key not in ['patient_demographics', 'report_date', 'lab_name']:
                     if isinstance(value, dict) and any(k in value for k in ['value', 'unit', 'ref_range']):
-                        # This looks like a test result
                         lab_results.append({
                             'test_name': key,
                             'value': value.get('value', ''),
@@ -284,7 +243,7 @@ def format_response(result, report_type, report_id=None):
             'criticalFindings': clinician_summary.get('critical_findings', []),
             'normalFindings': clinician_summary.get('normal_findings', []),
             'differentialConsiderations': clinician_summary.get('differential_considerations', []),
-            'chartData': chart_data  # Add visualization data
+            'chartData': chart_data
         }
     
     return response
@@ -292,13 +251,11 @@ def format_response(result, report_type, report_id=None):
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
-    """Handle file too large error"""
     return jsonify({'error': 'File too large. Maximum size is 16MB'}), 413
 
 
 @app.errorhandler(500)
 def internal_server_error(error):
-    """Handle internal server errors"""
     return jsonify({'error': 'Internal server error', 'details': str(error)}), 500
 
 

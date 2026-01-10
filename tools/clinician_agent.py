@@ -7,13 +7,8 @@ load_dotenv()
 
 
 class ClinicianSummaryAgent:
-    """
-    Agent responsible for generating concise, professional clinical summaries
-    with highlighted abnormal values, reference ranges, and evidence-based context.
-    """
     
     def __init__(self):
-        # Use dedicated clinician API key, fallback to analysis key for backward compatibility
         groq_api_key = os.getenv("GROQ_CLINICIAN_API_KEY") or os.getenv("GROQ_ANALYSIS_API_KEY")
         if not groq_api_key:
             raise ValueError("GROQ_CLINICIAN_API_KEY or GROQ_ANALYSIS_API_KEY is required for Clinician Agent")
@@ -26,24 +21,11 @@ class ClinicianSummaryAgent:
     
     def generate_clinician_summary(self, structured_data: dict, analysis_result: dict,
                                    research_findings: dict) -> dict:
-        """
-        Generate professional clinical summary for healthcare providers.
-        
-        Args:
-            structured_data: Raw lab values from Extractor
-            analysis_result: Medical analysis from Analyser
-            research_findings: Research evidence from Research Agent
-        
-        Returns:
-            Dictionary with clinical summary in professional format
-        """
         print("   Generating Clinical Summary (Clinician Agent)...")
         
-        # Extract key information
         abnormalities = analysis_result.get("detailed_analysis", {}).get("abnormalities", [])
         overall_health = analysis_result.get("health_summary", {}).get("overall_health_reading", "Unknown")
         
-        # Build context from research findings
         clinician_context = research_findings.get("clinician_summary", "")
         evidence_sources = research_findings.get("evidence_sources", [])
         
@@ -109,12 +91,11 @@ Task: Create a professional clinical summary with marked abnormal values and evi
                     {"role": "user", "content": user_prompt}
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.2  # Lower for clinical precision
+                temperature=0.2
             )
             
             clinician_summary = json.loads(response.choices[0].message.content)
             
-            # Add metadata
             clinician_summary["agent"] = "ClinicianSummaryAgent"
             clinician_summary["overall_health_status"] = overall_health
             clinician_summary["evidence_sources"] = evidence_sources
@@ -134,7 +115,6 @@ Task: Create a professional clinical summary with marked abnormal values and evi
 
 
 if __name__ == "__main__":
-    # Test the Clinician Agent
     agent = ClinicianSummaryAgent()
     
     test_structured_data = {

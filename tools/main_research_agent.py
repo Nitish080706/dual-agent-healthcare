@@ -8,7 +8,6 @@ load_dotenv()
 
 class ResearchOrchestrator:
     def __init__(self):
-        # Use dedicated research API key, fallback to analysis key for backward compatibility
         api_key = os.getenv("GROQ_RESEARCH_API_KEY") or os.getenv("GROQ_ANALYSIS_API_KEY")
         if not api_key:
             raise ValueError("GROQ_RESEARCH_API_KEY or GROQ_ANALYSIS_API_KEY required")

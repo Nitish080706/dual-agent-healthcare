@@ -64,7 +64,6 @@ class MongoDBHandler:
             raise Exception(f"Error storing lab report: {str(e)}")
 
     def update_report(self, report_id, update_data):
-        """Update an existing report with new data (progressive enrichment)"""
         try:
             result = self.reports_collection.update_one(
                 {"report_id": report_id},
@@ -109,12 +108,10 @@ class LabReportProcessor:
         )
         self.groq_analysis_model = "llama-3.3-70b-versatile"
 
-        # Initialize RAG System
         groq_rag_key = os.getenv("GROQ_RAG_API_KEY") or groq_analysis_key
         self.rag_system = MedicalRAGSystem(groq_api_key=groq_rag_key)
         self.rag_system.initialize_lab_reference_data()
 
-        # Initialize Patient and Clinician Agents
         print("   [Debug] Initializing Patient and Clinician Agents...")
         self.patient_agent = PatientExplainerAgent()
         self.clinician_agent = ClinicianSummaryAgent()
@@ -141,7 +138,7 @@ class LabReportProcessor:
             return ""
 
     def clean_text(self, text):
-        text = re.sub(r'\\s+', ' ', text)
+        text = re.sub(r'\s+', ' ', text)
         return text.strip()
 
     def read_report(self, file_path):
@@ -163,7 +160,7 @@ class LabReportProcessor:
                 model=self.groq_extraction_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Extract this report:\\n{raw_text}"}
+                    {"role": "user", "content": f"Extract this report:\n{raw_text}"}
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.1
@@ -207,7 +204,6 @@ class LabReportProcessor:
                     "evidence_sources": []
                 }
 
-            # Retrieve Reference Knowledge from RAG (reduced context to avoid token limits)
             print("   Querying RAG for medical reference knowledge...")
             test_names = [abn.get("test", "Unknown Test") for abn in abnormalities]
             rag_context = self.rag_system.get_reference_context(test_names, top_k=1)
@@ -217,8 +213,6 @@ class LabReportProcessor:
 
             print("Research Evidence Gathered (Research Agent 3)")
 
-            # Combine RAG + Research in the final prompt logic (or pass both to a synthesizer)
-            # For now, we store them as separate components in the research result
             return {
                 "full_report": research_report,
                 "rag_reference": rag_context,
@@ -238,7 +232,7 @@ class LabReportProcessor:
 
     def _extract_section(self, markdown_text, section_name):
         try:
-            lines = markdown_text.split('\\n')
+            lines = markdown_text.split('\n')
             section_lines = []
             in_section = False
 
@@ -251,13 +245,13 @@ class LabReportProcessor:
                 elif in_section:
                     section_lines.append(line)
 
-            return '\\n'.join(section_lines).strip()
+            return '\n'.join(section_lines).strip()
         except:
             return markdown_text
 
     def _extract_citations(self, markdown_text):
         import re
-        urls = re.findall(r'https?://[^\\s)]+', markdown_text)
+        urls = re.findall(r'https?://[^\s)]+', markdown_text)
         return urls
 
     def analyze_with_groq(self, structured_data):
@@ -296,7 +290,7 @@ class LabReportProcessor:
             }
 
     def process_lab_report(self, file_path):
-        print(f"\\nProcessing: {os.path.basename(file_path)}")
+        print(f"\nProcessing: {os.path.basename(file_path)}")
 
         raw_text = self.read_report(file_path)
         if not raw_text:
@@ -312,7 +306,6 @@ class LabReportProcessor:
         research_result = self.research_findings(structured_data, analysis_result)
         print("Research Complete (Research Agent 3)")
 
-        # Patient Agent - Simple language explanation
         patient_summary = self.patient_agent.generate_patient_summary(
             structured_data=structured_data,
             analysis_result=analysis_result,
@@ -320,7 +313,6 @@ class LabReportProcessor:
         )
         print("Patient Summary Complete (Patient Agent 4)")
 
-        # Clinician Agent - Professional clinical summary
         clinician_summary = self.clinician_agent.generate_clinician_summary(
             structured_data=structured_data,
             analysis_result=analysis_result,
@@ -367,11 +359,11 @@ if __name__ == "__main__":
                     file_name=os.path.basename(file_path)
                 )
             else:
-                print("\\n[DB Skipped] MongoDB URI not set.")
+                print("\n[DB Skipped] MongoDB URI not set.")
                 print(json.dumps(result['health_summary'], indent=2))
 
     except Exception as e:
-        print(f"\\nCRITICAL ERROR: {e}")
+        print(f"\nCRITICAL ERROR: {e}")
     finally:
         if db_handler:
             db_handler.close_connection()

@@ -7,13 +7,8 @@ load_dotenv()
 
 
 class PatientExplainerAgent:
-    """
-    Agent responsible for translating medical lab report findings into 
-    patient-friendly language with clear disclaimers and actionable questions.
-    """
     
     def __init__(self):
-        # Use dedicated patient API key, fallback to analysis key for backward compatibility
         groq_api_key = os.getenv("GROQ_PATIENT_API_KEY") or os.getenv("GROQ_ANALYSIS_API_KEY")
         if not groq_api_key:
             raise ValueError("GROQ_PATIENT_API_KEY or GROQ_ANALYSIS_API_KEY is required for Patient Agent")
@@ -26,24 +21,11 @@ class PatientExplainerAgent:
     
     def generate_patient_summary(self, structured_data: dict, analysis_result: dict, 
                                  research_findings: dict) -> dict:
-        """
-        Generate patient-friendly explanation of lab results.
-        
-        Args:
-            structured_data: Raw lab values from Extractor
-            analysis_result: Medical analysis from Analyser
-            research_findings: Research evidence from Research Agent
-        
-        Returns:
-            Dictionary with patient-friendly summary
-        """
         print("   Generating Patient-Friendly Summary (Patient Agent)...")
         
-        # Extract key information
         abnormalities = analysis_result.get("detailed_analysis", {}).get("abnormalities", [])
         overall_health = analysis_result.get("health_summary", {}).get("overall_health_reading", "Unknown")
         
-        # Build context from research findings
         patient_explainer_context = research_findings.get("patient_explainer", "")
         evidence_sources = research_findings.get("evidence_sources", [])
         
@@ -107,12 +89,11 @@ Task: Create a patient-friendly summary that helps them understand their results
                     {"role": "user", "content": user_prompt}
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.4  # Slightly higher for natural language
+                temperature=0.4
             )
             
             patient_summary = json.loads(response.choices[0].message.content)
             
-            # Add metadata
             patient_summary["agent"] = "PatientExplainerAgent"
             patient_summary["overall_health_status"] = overall_health
             
@@ -130,7 +111,6 @@ Task: Create a patient-friendly summary that helps them understand their results
 
 
 if __name__ == "__main__":
-    # Test the Patient Agent
     agent = PatientExplainerAgent()
     
     test_structured_data = {

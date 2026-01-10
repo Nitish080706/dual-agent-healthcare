@@ -1,4 +1,3 @@
-// API Configuration
 const API_BASE_URL = 'http://localhost:5000/api';
 
 let patientChart1 = null;
@@ -8,7 +7,6 @@ let clinicChart2 = null;
 let currentPatientData = null;
 let currentClinicData = null;
 
-// Navigation Functions
 function showSelectionPage() {
     document.getElementById('selectionPage').classList.add('active');
     document.getElementById('patientPage').classList.remove('active');
@@ -20,7 +18,6 @@ function showPatientPage() {
     document.getElementById('patientPage').classList.add('active');
     document.getElementById('clinicPage').classList.remove('active');
 
-    // Reset patient page
     resetPatientPage();
 }
 
@@ -29,23 +26,18 @@ function showClinicPage() {
     document.getElementById('patientPage').classList.remove('active');
     document.getElementById('clinicPage').classList.add('active');
 
-    // Reset clinic page
     resetClinicPage();
 }
 
-// Patient Page Functions
 async function handlePatientUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        // Show loading state
         showLoadingState('patient');
 
         try {
-            // Upload and process file
             const result = await uploadAndProcessFile(file, 'patient');
             currentPatientData = result.patientData;
 
-            // Display results
             displayPatientResults();
         } catch (error) {
             console.error('Error processing file:', error);
@@ -55,21 +47,16 @@ async function handlePatientUpload(event) {
 }
 
 function displayPatientResults() {
-    // Hide upload section
     document.getElementById('patientUploadSection').style.display = 'none';
 
-    // Show results section
     const resultsSection = document.getElementById('patientResultsSection');
     resultsSection.style.display = 'block';
 
-    // Populate primary box with details
     populatePatientDetails();
 
-    // Create charts
     createPatientCharts();
 }
 
-// API Upload Function
 async function uploadAndProcessFile(file, reportType) {
     const formData = new FormData();
     formData.append('file', file);
@@ -98,7 +85,6 @@ async function uploadAndProcessFile(file, reportType) {
     return result;
 }
 
-// Loading State Functions
 function showLoadingState(pageType) {
     const uploadSection = document.getElementById(pageType + 'UploadSection');
     const resultsSection = document.getElementById(pageType + 'ResultsSection');
@@ -151,7 +137,6 @@ function populatePatientDetails() {
     const summary = currentPatientData.summary || currentPatientData.patientExplanation || 'No summary available';
     const overallHealth = currentPatientData.overallHealth || 'Unknown';
 
-    // Format abnormalities for display
     const abnormalitiesList = abnormalities.map(abn => {
         return `${abn.test || 'Unknown Test'}: ${abn.value || 'N/A'} ${abn.unit || ''} - ${abn.implication || abn.status || 'See doctor'}`;
     });
@@ -181,7 +166,6 @@ function createPatientCharts() {
     console.log('🔷 createPatientCharts called');
     console.log('📊 Patient Data:', currentPatientData);
 
-    // Destroy existing charts if they exist
     if (patientChart1) {
         patientChart1.destroy();
     }
@@ -189,13 +173,11 @@ function createPatientCharts() {
         patientChart2.destroy();
     }
 
-    // Check if we have chart data from visualization agent
     const chartData = currentPatientData?.chartData;
 
     if (chartData && chartData.health_progression) {
         console.log('✅ Using visualization agent data');
 
-        // Chart 1: Health Progression Timeline from agent
         const ctx1 = document.getElementById('patientChart1').getContext('2d');
         const healthProg = chartData.health_progression;
 
@@ -283,7 +265,6 @@ function createPatientCharts() {
             }
         });
 
-        // Chart 2: Lab Values Comparison from agent
         const ctx2 = document.getElementById('patientChart2').getContext('2d');
         const labComp = chartData.lab_comparison;
 
@@ -359,7 +340,6 @@ function createPatientCharts() {
         console.log('✅ Patient charts created successfully from agent data');
     } else {
         console.warn('⚠️ No chart data from visualization agent, using fallback');
-        // Fallback to original implementation if no agent data
         createPatientChartsFallback();
     }
 }
@@ -370,7 +350,6 @@ function createPatientChartsFallback() {
     const ctx1 = document.getElementById('patientChart1').getContext('2d');
     const ctx2 = document.getElementById('patientChart2').getContext('2d');
 
-    // Simple fallback charts with sample data
     patientChart1 = new Chart(ctx1, {
         type: 'line',
         data: {
@@ -422,19 +401,15 @@ function resetPatientPage() {
     }
 }
 
-// Clinic Page Functions
 async function handleClinicUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        // Show loading state
         showLoadingState('clinic');
 
         try {
-            // Upload and process file
             const result = await uploadAndProcessFile(file, 'clinic');
             currentClinicData = result.clinicData;
 
-            // Display results
             displayClinicResults();
         } catch (error) {
             console.error('Error processing file:', error);
@@ -444,28 +419,21 @@ async function handleClinicUpload(event) {
 }
 
 function displayClinicResults() {
-    // Hide upload section
     document.getElementById('clinicUploadSection').style.display = 'none';
 
-    // Show results section
     const resultsSection = document.getElementById('clinicResultsSection');
     resultsSection.style.display = 'block';
 
-    // Populate metrics
     populateClinicMetrics();
 
-    // Populate additional details
     populateClinicDetails();
 
-    // Charts removed per user request - graphs not working
-    // createClinicCharts();
 }
 
 function createClinicCharts() {
     console.log('🔷 createClinicCharts called');
     console.log('📊 Clinic Data:', currentClinicData);
 
-    // Destroy existing charts if they exist
     if (clinicChart1) {
         clinicChart1.destroy();
     }
@@ -473,13 +441,11 @@ function createClinicCharts() {
         clinicChart2.destroy();
     }
 
-    // Check if we have chart data from visualization agent
     const chartData = currentClinicData?.chartData;
 
     if (chartData && chartData.lab_overview && chartData.reference_comparison) {
         console.log('✅ Using visualization agent data for clinic charts');
 
-        // Chart 1: Lab Values Overview from agent
         const ctx1 = document.getElementById('clinicChart1');
         if (!ctx1) {
             console.error('❌ Chart canvas element clinicChart1 not found');
@@ -557,7 +523,6 @@ function createClinicCharts() {
 
         console.log('✅ Clinic Chart 1 created from agent data');
 
-        // Chart 2: Values vs Reference Ranges from agent
         const ctx2 = document.getElementById('clinicChart2');
         if (!ctx2) {
             console.error('❌ Chart canvas element clinicChart2 not found');
@@ -568,12 +533,11 @@ function createClinicCharts() {
         const labels2 = refComparison.map(t => t.test_name);
         const values2 = refComparison.map(t => t.value);
 
-        // Color code based on status
         const backgroundColors = refComparison.map(t => {
             switch (t.status) {
-                case 'high': return '#F87171'; // Red for high
-                case 'low': return '#FBBF24';  // Yellow for low
-                default: return '#60A5FA';     // Blue for normal
+                case 'high': return '#F87171';
+                case 'low': return '#FBBF24';
+                default: return '#60A5FA';
             }
         });
 
@@ -644,7 +608,6 @@ function createClinicCharts() {
         console.log('✅ Clinic charts created successfully from agent data');
     } else {
         console.warn('⚠️ No chart data from visualization agent for clinic');
-        // Fallback if no agent data
         createClinicChartsFallback();
     }
 }
@@ -660,7 +623,6 @@ function createClinicChartsFallback() {
         return;
     }
 
-    // Simple fallback charts with sample data
     clinicChart1 = new Chart(ctx1.getContext('2d'), {
         type: 'bar',
         data: {
@@ -713,10 +675,8 @@ function populateClinicMetrics() {
         return;
     }
 
-    // Clear existing metrics
     metricsGrid.innerHTML = '';
 
-    // If no lab results, show message
     if (labResults.length === 0) {
         console.warn('⚠️ Lab results array is empty');
         metricsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No lab results available</p>';
@@ -725,7 +685,6 @@ function populateClinicMetrics() {
 
     console.log('✅ Creating', labResults.length, 'metric boxes');
 
-    // Create metric box for each lab result
     labResults.forEach((test, index) => {
         console.log(`  Creating metric ${index + 1}:`, test);
 
@@ -767,7 +726,6 @@ function populateClinicDetails() {
     const recommendations = currentClinicData.recommendations || [];
     const differentialConsiderations = currentClinicData.differentialConsiderations || [];
 
-    // Format evidence sources
     const evidenceList = evidenceSources.slice(0, 5).map(source => `<li style="padding: 8px 0; border-bottom: 1px solid #E5E7EB; color: #6B7280;"><a href="${source}" target="_blank" style="color: #3B82F6; text-decoration: none;">${source}</a></li>`).join('');
 
     detailsContent.innerHTML = `
@@ -828,7 +786,6 @@ function resetClinicPage() {
     document.getElementById('clinicResultsSection').style.display = 'none';
     document.getElementById('clinicFileInput').value = '';
 
-    // Destroy charts
     if (clinicChart1) {
         clinicChart1.destroy();
         clinicChart1 = null;
@@ -837,7 +794,6 @@ function resetClinicPage() {
         clinicChart2.destroy();
         clinicChart2 = null;
     }
-    // Reset metric values
     const metrics = ['hemoglobin', 'wbc', 'rbc', 'platelets', 'hematocrit', 'mcv', 'mch', 'mchc'];
     metrics.forEach(metric => {
         document.getElementById(metric).textContent = '--';

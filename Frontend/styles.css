@@ -1,36 +1,20 @@
-/* Premium Light Mode Design with Modern Aesthetics */
 :root {
     --primary-blue: #3B82F6;
-    /* Vibrant Blue */
     --primary-blue-light: #60A5FA;
-    /* Light Blue */
     --blue-lighter: #93C5FD;
-    /* Even Lighter Blue */
     --blue-gradient-start: #60A5FA;
-    /* Gradient Start */
     --blue-gradient-end: #3B82F6;
-    /* Gradient End */
     --blue-light: #DBEAFE;
-    /* Very Light Blue Background */
     --blue-hover: #2563EB;
-    /* Darker Blue on Hover */
     --blue-accent: #EFF6FF;
-    /* Subtle Blue Accent */
     --background: #F9FAFB;
-    /* Off-white background */
     --text-primary: #111827;
-    /* Dark Text */
     --text-secondary: #6B7280;
-    /* Medium Gray Text */
     --border-light: #E5E7EB;
-    /* Very Subtle Border */
     --white: #FFFFFF;
     --success: #10B981;
-    /* Green for success */
     --warning: #F59E0B;
-    /* Orange for warnings */
     --danger: #EF4444;
-    /* Red for danger */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -68,7 +52,6 @@ body {
     padding: 60px 40px;
 }
 
-/* Selection Page */
 .main-title {
     text-align: center;
     font-size: 2.75rem;
@@ -135,7 +118,6 @@ body {
     line-height: 1.5;
 }
 
-/* Page Title */
 .page-title {
     text-align: center;
     font-size: 2.25rem;
@@ -163,7 +145,6 @@ body {
     border-color: var(--primary-blue);
 }
 
-/* Upload Section */
 .upload-section {
     display: flex;
     justify-content: center;
@@ -238,7 +219,6 @@ body {
     transform: translateY(-2px);
 }
 
-/* Results Section */
 .results-section {
     margin-top: 0;
     animation: fadeIn 0.4s ease;
@@ -256,7 +236,6 @@ body {
     }
 }
 
-/* Primary Box */
 .primary-box {
     background: var(--white);
     border: 1px solid var(--border-light);
@@ -334,7 +313,6 @@ body {
     border-bottom: none;
 }
 
-/* Secondary Boxes */
 .secondary-boxes {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
@@ -367,7 +345,6 @@ body {
     max-height: 320px;
 }
 
-/* Clinic Metrics Grid */
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -456,7 +433,6 @@ body {
     font-size: 0.9375rem;
 }
 
-/* Loading Spinner */
 .loading-spinner {
     border: 3px solid var(--border-light);
     border-top: 3px solid var(--primary-blue);
@@ -477,7 +453,6 @@ body {
     }
 }
 
-/* Health Score Badge */
 .health-score-badge {
     display: inline-block;
     padding: 8px 20px;
@@ -510,7 +485,6 @@ body {
     color: white;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
     .container {
         padding: 40px 24px;
